@@ -39,6 +39,12 @@ for i=1:length(this(1).data)
                 a(end+1) = loc;
                 b(end+1) = i;
             end
+        case 'NODE_INDEX'
+            [tf, loc] = ismember('node_indices',intent);
+            if tf
+                a(end+1) = loc;
+                b(end+1) = i;
+            end
         case cdata
             [tf, loc] = ismember('cdata',intent);
             if tf
@@ -101,7 +107,6 @@ c = {
 'TIME_SERIES'
 'RGB_VECTOR'
 'RGBA_VECTOR'
-'NODE_INDEX'
 'SHAPE'
 'CONNECTIVITY_DENSE'
 'CONNECTIVITY_DENSE_TIME'
