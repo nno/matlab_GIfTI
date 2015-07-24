@@ -273,17 +273,18 @@ function data = get_gifti_data_vectorized(this)
 % gets the data from this.data. 
 % data elements with intent 'indices' or 'cdata' are converted to a list
 % of vector elements with RowMajorOrder, even if they are present as
-% matrices in this.data
+% matrices in this.data. It also ensures (by re-ordering, if necessary),
+% that data elements with intent 'indices' comes first.
 
 n=numel(this.data);
 
 data_cell=cell(1,n);
-[data_types,indices_to_vectorize]=isintent(this,{'indices','cdata'});
+[data_types,i_to_vectorize]=isintent(this,{'indices','cdata'});
 
 for i=1:n
     d=this.data{i};
 
-    data_type_index=find(i==indices_to_vectorize);
+    data_type_index=find(i==i_to_vectorize);
     if isempty(data_type_index)
         % no conversion needed
         data_cell{i}={d};
@@ -315,7 +316,12 @@ for i=1:n
     data_cell{i}=d_vec;
 end
 
-data=cat(2,data_cell{:});
+% ensure that data with indices comes first
+indices_pos=i_to_vectorize(data_types==1);
+indices_ordered=[indices_pos setdiff(1:n, indices_pos)];
+
+data_cell_ordered=data_cell(indices_ordered);
+data=cat(2,data_cell_ordered{:});
 
 
 %==========================================================================
