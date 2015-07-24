@@ -121,11 +121,18 @@ for i=1:length(this.data)
     end
 end
 
+
+% get data is in vector form (cdata matrix requires conversion to a
+% set of vectors per the GIFTI standard), without changing this.data
+%--------------------------------------------------------------------------
+
+data = get_gifti_data_vectorized(this);
+
 % Prolog
 %--------------------------------------------------------------------------
 fprintf(fid,'<?xml version="1.0" encoding="UTF-8"?>\n');
 fprintf(fid,'<!DOCTYPE GIFTI SYSTEM "http://www.nitrc.org/frs/download.php/115/gifti.dtd">\n');
-fprintf(fid,'<GIFTI Version="1.0"  NumberOfDataArrays="%d">\n',numel(this.data));
+fprintf(fid,'<GIFTI Version="1.0"  NumberOfDataArrays="%d">\n',numel(data));
 
 o = @(x) blanks(x*3);
 
@@ -169,7 +176,6 @@ end
 
 % DataArray
 %--------------------------------------------------------------------------
-data=this.data;
 for i=1:length(data)
     fprintf(fid,'%s<DataArray',o(1));
     if def.offset
@@ -259,6 +265,58 @@ for i=1:length(data)
 end
 
 fprintf(fid,'</GIFTI>\n');
+
+%==========================================================================
+% function data = get_gifti_data_vectorized(this)
+%==========================================================================
+function data = get_gifti_data_vectorized(this)
+% gets the data from this.data. 
+% data elements with intent 'indices' or 'cdata' are converted to a list
+% of vector elements with RowMajorOrder, even if they are present as
+% matrices in this.data
+
+n=numel(this.data);
+
+data_cell=cell(1,n);
+[data_types,indices_to_vectorize]=isintent(this,{'indices','cdata'});
+
+for i=1:n
+    d=this.data{i};
+
+    data_type_index=find(i==indices_to_vectorize);
+    if isempty(data_type_index)
+        % no conversion needed
+        data_cell{i}={d};
+        continue;
+    end
+
+    switch data_types(data_type_index);
+        case 1
+            assert(sum(size(d)>1)<=1); % must be vector
+            ncolumns=1;
+            d.data=d.data(:);
+            d_vec={d};
+        case 2
+            ncolumns=size(d.data,2);
+            d_vec=cell(1,ncolumns);
+            for j=1:ncolumns
+                d_vec{j}=d;
+                d_vec{j}.data=d.data(:,j);
+            end
+    end
+
+    for j=1:ncolumns
+        d_vec{j}.attributes=rmfield(d_vec{j}.attributes,'Dim1');
+        d_vec{j}.attributes.Dimensionality='1';
+        d_vec{j}.attributes.ArrayIndexingOrder='RowMajorOrder';
+        d_vec{j}.attributes.Dim0=num2str(numel(d_vec{j}.data));
+    end
+
+    data_cell{i}=d_vec;
+end
+
+data=cat(2,data_cell{:});
+
 
 %==========================================================================
 % function fid = save_dae(fid,this)
