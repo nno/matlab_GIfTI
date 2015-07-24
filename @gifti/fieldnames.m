@@ -13,4 +13,6 @@ if numel(this) > 1, warning('Only handle scalar objects yet.'); end
 
 pfn = {'vertices' 'faces' 'normals' 'cdata' 'mat' 'labels' 'indices'};
 
-names = pfn(isintent(this,pfn));
+% cdata elements can occur multiple times; only return each fieldname
+% exactly once.
+names = unique(pfn(isintent(this,pfn)));
