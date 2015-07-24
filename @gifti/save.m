@@ -169,19 +169,20 @@ end
 
 % DataArray
 %--------------------------------------------------------------------------
-for i=1:length(this.data)
+data=this.data;
+for i=1:length(data)
     fprintf(fid,'%s<DataArray',o(1));
     if def.offset
-        this.data{i}.attributes.ExternalFileOffset = num2str(def.offset);
+        data{i}.attributes.ExternalFileOffset = num2str(def.offset);
     end
-    fn = sort(fieldnames(this.data{i}.attributes));
+    fn = sort(fieldnames(data{i}.attributes));
     oo = repmat({o(5) '\n'},length(fn),1); oo{1} = '  '; oo{end} = '';
     for j=1:length(fn)
         if strcmp(fn{j},'ExternalFileName')
-            [p,f,e] = fileparts(this.data{i}.attributes.(fn{j}));
+            [p,f,e] = fileparts(data{i}.attributes.(fn{j}));
             attval = [f e];
         else
-            attval = this.data{i}.attributes.(fn{j});
+            attval = data{i}.attributes.(fn{j});
         end
         fprintf(fid,'%s%s="%s"%s',oo{j,1},...
                 fn{j},attval,sprintf(oo{j,2}));
@@ -191,26 +192,26 @@ for i=1:length(this.data)
     % MetaData
     %----------------------------------------------------------------------
     fprintf(fid,'%s<MetaData>\n',o(2));
-    for j=1:length(this.data{i}.metadata)
+    for j=1:length(data{i}.metadata)
         fprintf(fid,'%s<MD>\n',o(3));
         fprintf(fid,'%s<Name><![CDATA[%s]]></Name>\n',o(4),...
-            this.data{i}.metadata(j).name);
+            data{i}.metadata(j).name);
         fprintf(fid,'%s<Value><![CDATA[%s]]></Value>\n',o(4),...
-            this.data{i}.metadata(j).value);
+            data{i}.metadata(j).value);
         fprintf(fid,'%s</MD>\n',o(3));
     end
     fprintf(fid,'%s</MetaData>\n',o(2));
     
     % CoordinateSystemTransformMatrix
     %----------------------------------------------------------------------
-    for j=1:length(this.data{i}.space)
+    for j=1:length(data{i}.space)
         fprintf(fid,'%s<CoordinateSystemTransformMatrix>\n',o(2));
         fprintf(fid,'%s<DataSpace><![CDATA[%s]]></DataSpace>\n',o(3),...
-            this.data{i}.space(j).DataSpace);
+            data{i}.space(j).DataSpace);
         fprintf(fid,'%s<TransformedSpace><![CDATA[%s]]></TransformedSpace>\n',o(3),...
-            this.data{i}.space(j).TransformedSpace);
+            data{i}.space(j).TransformedSpace);
         fprintf(fid,'%s<MatrixData>%s</MatrixData>\n',o(3),...
-            sprintf('%f ',this.data{i}.space(j).MatrixData'));
+            sprintf('%f ',data{i}.space(j).MatrixData'));
         fprintf(fid,'%s</CoordinateSystemTransformMatrix>\n',o(2));
     end
     
@@ -219,22 +220,22 @@ for i=1:length(this.data)
     fprintf(fid,'%s<Data>',o(2));
     tp = getdict;
     try
-        tp = tp.(this.data{i}.attributes.DataType);
+        tp = tp.(data{i}.attributes.DataType);
     catch
         error('[GIFTI] Unknown DataType.');
     end
-    switch this.data{i}.attributes.Encoding
+    switch data{i}.attributes.Encoding
         case 'ASCII'
-            fprintf(fid, [tp.format ' '], this.data{i}.data);
+            fprintf(fid, [tp.format ' '], data{i}.data);
         case 'Base64Binary'
-            fprintf(fid,base64encode(typecast(this.data{i}.data(:),'uint8')));
+            fprintf(fid,base64encode(typecast(data{i}.data(:),'uint8')));
             % uses native machine format
         case 'GZipBase64Binary'
-            fprintf(fid,base64encode(zstream('C',typecast(this.data{i}.data(:),'uint8'))));
+            fprintf(fid,base64encode(zstream('C',typecast(data{i}.data(:),'uint8'))));
             % uses native machine format
         case 'ExternalFileBinary'
-            extfilename = this.data{i}.attributes.ExternalFileName;
-            dat = this.data{i}.data;
+            extfilename = data{i}.attributes.ExternalFileName;
+            dat = data{i}.data;
             if isa(dat,'file_array')
                 dat = subsref(dat,substruct('()',repmat({':'},1,numel(dat.dim))));
             end
